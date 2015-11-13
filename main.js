@@ -20,12 +20,17 @@ for(let i = 0; i < generationSize; ++i){
     let hypothesis = {};
     hypothesis.word = randomWord(target.lenght);
     hypothesis.fitness = evaluate(hypothesis);
+    if (hypothesis.fitness > maxFitness) {
+      maxFitness = hypothesis.fitness;
+    }
+    if(hypothesis.fitness < minFitness){
+        minFitness = hypothesis.fitness;
+    }
     population.push(hypothesis);
 }
 
 while (maxFitness < FITNESS_THRESHOLD) {
-
-  population = select(population, maxFitness);
+  population = select(population, maxFitness, minFitness);
   crossover(population, maxFitness);
   mutate(population, maxFitness);
   maxFitness = Number.MIN_VALUE;
