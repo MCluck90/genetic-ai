@@ -11,10 +11,21 @@ let crossoverKey = yargs.crossover || 'single';
 let mutationRate = yargs.mutation || 0.05;
 let generationSize = yargs.genSize || 100;
 let evaluateKey = yargs.evaluate || 'ascii';
-let select = require(`./${selectKey}-select.js`);
-let crossover = require(`./${crossoverKey}-crossover.js`);
-let evaluate = require(`./${evaluateKey}-evaluate.js`);
+let select = require(`./selections/${selectKey}-select.js`);
+let crossover = require(`./crossovers/${crossoverKey}-crossover.js`);
+let evaluate = require(`./evaluations/${evaluateKey}-evaluate.js`);
 let randomWord = require('./random-word.js');
+
+let mutate = function(pop){
+    let mutatedIdx = [];
+    let numMutated = Math.floor(pop.length * mutationRate);
+    for(let i = 0; i < numMutated; ++i){
+        let idx = Math.floor(Math.random() * pop.length);
+        /*TODO: make sure each index is unique
+                then for each index randomly change
+                one char in the word of the hypothesis at that index*/
+    }
+}
 
 for(let i = 0; i < generationSize; ++i){
     let hypothesis = {};
@@ -31,9 +42,10 @@ for(let i = 0; i < generationSize; ++i){
 
 while (maxFitness < FITNESS_THRESHOLD) {
   population = select(population, maxFitness, minFitness);
-  crossover(population, maxFitness);
-  mutate(population, maxFitness);
+  crossover(population, generationSize);
+  mutate(population);
   maxFitness = Number.MIN_VALUE;
+  minFitness = 1;
   population.forEach(function(hypothesis) {
     hypothesis.fitness = evaluate(hypothesis);
     if (hypothesis.fitness > maxFitness) {
