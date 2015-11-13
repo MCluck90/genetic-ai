@@ -14,22 +14,33 @@ let evaluateKey = yargs.evaluate || 'ascii';
 let select = require(`./selections/${selectKey}-select.js`);
 let crossover = require(`./crossovers/${crossoverKey}-crossover.js`);
 let evaluate = require(`./evaluations/${evaluateKey}-evaluate.js`);
-let randomWord = require('./random-word.js');
+let rand = require('./random-word.js');
+
+Array.prototype.includes = function(thing){
+    for(let i = 0; i < this.length; ++i){
+        if(this[i] === thing){
+            return true;
+        }
+    }
+    return false;
+}
 
 let mutate = function(pop){
     let mutatedIdx = [];
     let numMutated = Math.floor(pop.length * mutationRate);
     for(let i = 0; i < numMutated; ++i){
         let idx = Math.floor(Math.random() * pop.length);
-        /*TODO: make sure each index is unique
-                then for each index randomly change
-                one char in the word of the hypothesis at that index*/
+        while(mutatedIdx.includes(idx)){
+            idx = Math.floor(Math.random() * pop.length);
+        }
+        mutatedIdx.push(idx);
+        pop[idx].word[Math.floor(Math.random()*pop[idx].word.length)] = rand.char();
     }
 }
 
 for(let i = 0; i < generationSize; ++i){
     let hypothesis = {};
-    hypothesis.word = randomWord(target.lenght);
+    hypothesis.word = rand.word(target.lenght);
     hypothesis.fitness = evaluate(hypothesis);
     if (hypothesis.fitness > maxFitness) {
       maxFitness = hypothesis.fitness;

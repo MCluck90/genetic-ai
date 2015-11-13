@@ -9,4 +9,9 @@ let randWord = function(length){
     return word;
 }
 
-module.exports = randWord;
+let randChar = function(){
+    return possible.charAt(Math.floor(Math.random() * possible.length));
+}
+
+module.exports.word = randWord;
+module.exports.char = randChar;
