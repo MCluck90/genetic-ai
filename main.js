@@ -34,7 +34,9 @@ let mutate = function(pop){
             idx = Math.floor(Math.random() * pop.length);
         }
         mutatedIdx.push(idx);
+        pop[idx].word = pop[idx].word.split('');
         pop[idx].word[Math.floor(Math.random()*pop[idx].word.length)] = rand.char();
+        pop[idx].word = pop[idx].word.join('');
     }
 }
 
@@ -51,7 +53,9 @@ for(let i = 0; i < generationSize; ++i){
     population.push(hypothesis);
 }
 
+let generations = 0;
 while (maxFitness < FITNESS_THRESHOLD) {
+  generations++;
   population = select(population, maxFitness, minFitness);
   crossover(population, generationSize);
   mutate(population);
@@ -67,3 +71,4 @@ while (maxFitness < FITNESS_THRESHOLD) {
     }
   });
 }
+console.log(`Generations: ${generations}`);
