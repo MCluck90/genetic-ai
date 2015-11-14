@@ -40,8 +40,8 @@ let mutate = function(pop){
 
 for(let i = 0; i < generationSize; ++i){
     let hypothesis = {};
-    hypothesis.word = rand.word(target.lenght);
-    hypothesis.fitness = evaluate(hypothesis);
+    hypothesis.word = rand.word(target.length);
+    hypothesis.fitness = evaluate(hypothesis, target);
     if (hypothesis.fitness > maxFitness) {
       maxFitness = hypothesis.fitness;
     }
@@ -55,12 +55,15 @@ while (maxFitness < FITNESS_THRESHOLD) {
   population = select(population, maxFitness, minFitness);
   crossover(population, generationSize);
   mutate(population);
-  maxFitness = Number.MIN_VALUE;
+  maxFitness = Number.MIN_SAFE_INTEGER;
   minFitness = 1;
-  population.forEach(function(hypothesis) {
-    hypothesis.fitness = evaluate(hypothesis);
+  population.forEach(function(hypothesis, index) {
+    hypothesis.fitness = evaluate(hypothesis, target);
     if (hypothesis.fitness > maxFitness) {
       maxFitness = hypothesis.fitness;
+    }
+    if (hypothesis.fitness < minFitness) {
+      minFitness = hypothesis.fitness;
     }
   });
 }
