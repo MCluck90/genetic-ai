@@ -1,5 +1,6 @@
 'use strict';
 
+let cluster = require('cluster');
 let yargs = require('yargs').argv;
 let population = [];
 const FITNESS_THRESHOLD = 0;
@@ -15,6 +16,21 @@ let select = require(`./selections/${selectKey}-select.js`);
 let crossover = require(`./crossovers/${crossoverKey}-crossover.js`);
 let evaluate = require(`./evaluations/${evaluateKey}-evaluate.js`);
 let rand = require('./random-word.js');
+
+if (cluster.isMaster) {
+  var cpuCount = require('os').cpus().length;
+  for (var i = 0; i < cpuCount; i += 1) {
+    cluster.fork();
+  }
+  let deathCount = 0;
+  cluster.on('exit', function(worker, code, signal) {
+    deathCount++;
+    if (deathCount === cpuCount) {
+      process.exit(0);
+    }
+  });
+  return;
+}
 
 Array.prototype.includes = function(thing){
     for(let i = 0; i < this.length; ++i){
@@ -72,3 +88,4 @@ while (maxFitness < FITNESS_THRESHOLD) {
   });
 }
 console.log(`Generations: ${generations}`);
+process.exit(0);
