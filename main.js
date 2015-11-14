@@ -1,6 +1,7 @@
 'use strict';
 
 let cluster = require('cluster');
+let fs = require('fs');
 let yargs = require('yargs').argv;
 let population = [];
 const FITNESS_THRESHOLD = 0;
@@ -14,6 +15,7 @@ let generationSize = yargs.genSize || 100;
 let evaluateKey = yargs.evaluate || 'ascii';
 let runCount = yargs.runs || 1;
 let cores = yargs.cores || require('os').cpus().length;
+let output = yargs.output || 'out';
 let select = require(`./selections/${selectKey}-select.js`);
 let crossover = require(`./crossovers/${crossoverKey}-crossover.js`);
 let evaluate = require(`./evaluations/${evaluateKey}-evaluate.js`);
@@ -21,7 +23,9 @@ let rand = require('./random-word.js');
 
 if (cluster.isMaster && cores > 1) {
   for (var i = 0; i < cores; i += 1) {
-    cluster.fork();
+    cluster.fork({
+      _childID: i
+    });
   }
   let deathCount = 0;
   cluster.on('exit', function(worker, code, signal) {
@@ -31,6 +35,8 @@ if (cluster.isMaster && cores > 1) {
     }
   });
   return;
+} else if (cluster.isMaster) {
+  process.env._childID = 0;
 }
 
 Array.prototype.includes = function(thing){
@@ -57,6 +63,11 @@ let mutate = function(pop){
     }
 }
 
+let log = fs.createWriteStream(`./${output}_${process.env._childID}.csv`);
+log.on('close', () => {
+  // Don't exit the program unti the data has been written out
+  process.exit(0);
+});
 while (runCount === -1 || runCount > 0) {
   population = [];
   maxFitness = Number.MIN_SAFE_INTEGER;
@@ -82,6 +93,7 @@ while (runCount === -1 || runCount > 0) {
     mutate(population);
     maxFitness = Number.MIN_SAFE_INTEGER;
     minFitness = 1;
+    let averageFitness = 0;
     population.forEach(function(hypothesis, index) {
       hypothesis.fitness = evaluate(hypothesis, target);
       if (hypothesis.fitness > maxFitness) {
@@ -90,9 +102,12 @@ while (runCount === -1 || runCount > 0) {
       if (hypothesis.fitness < minFitness) {
         minFitness = hypothesis.fitness;
       }
+      averageFitness += hypothesis.fitness;
     });
+    averageFitness /= population.length;
+    log.write(`${generations},${maxFitness},${minFitness},${averageFitness}\n`);
   }
-  console.log(`Generations: ${generations}`);
+  console.log(`${process.env._childID}> Generations: ${generations}`);
   runCount = Math.max(runCount - 1, -1);
 }
-process.exit(0);
+log.end();
