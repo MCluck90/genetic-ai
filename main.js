@@ -12,20 +12,21 @@ let crossoverKey = yargs.crossover || 'single';
 let mutationRate = yargs.mutation || 0.05;
 let generationSize = yargs.genSize || 100;
 let evaluateKey = yargs.evaluate || 'ascii';
+let runCount = yargs.runs || 1;
+let cores = yargs.cores || require('os').cpus().length;
 let select = require(`./selections/${selectKey}-select.js`);
 let crossover = require(`./crossovers/${crossoverKey}-crossover.js`);
 let evaluate = require(`./evaluations/${evaluateKey}-evaluate.js`);
 let rand = require('./random-word.js');
 
-if (cluster.isMaster) {
-  var cpuCount = require('os').cpus().length;
-  for (var i = 0; i < cpuCount; i += 1) {
+if (cluster.isMaster && cores > 1) {
+  for (var i = 0; i < cores; i += 1) {
     cluster.fork();
   }
   let deathCount = 0;
   cluster.on('exit', function(worker, code, signal) {
     deathCount++;
-    if (deathCount === cpuCount) {
+    if (deathCount === cores) {
       process.exit(0);
     }
   });
@@ -56,36 +57,42 @@ let mutate = function(pop){
     }
 }
 
-for(let i = 0; i < generationSize; ++i){
-    let hypothesis = {};
-    hypothesis.word = rand.word(target.length);
-    hypothesis.fitness = evaluate(hypothesis, target);
-    if (hypothesis.fitness > maxFitness) {
-      maxFitness = hypothesis.fitness;
-    }
-    if(hypothesis.fitness < minFitness){
-        minFitness = hypothesis.fitness;
-    }
-    population.push(hypothesis);
-}
-
-let generations = 0;
-while (maxFitness < FITNESS_THRESHOLD) {
-  generations++;
-  population = select(population, maxFitness, minFitness);
-  crossover(population, generationSize);
-  mutate(population);
+while (runCount === -1 || runCount > 0) {
+  population = [];
   maxFitness = Number.MIN_SAFE_INTEGER;
   minFitness = 1;
-  population.forEach(function(hypothesis, index) {
-    hypothesis.fitness = evaluate(hypothesis, target);
-    if (hypothesis.fitness > maxFitness) {
-      maxFitness = hypothesis.fitness;
-    }
-    if (hypothesis.fitness < minFitness) {
-      minFitness = hypothesis.fitness;
-    }
-  });
+  for(let i = 0; i < generationSize; ++i){
+      let hypothesis = {};
+      hypothesis.word = rand.word(target.length);
+      hypothesis.fitness = evaluate(hypothesis, target);
+      if (hypothesis.fitness > maxFitness) {
+        maxFitness = hypothesis.fitness;
+      }
+      if(hypothesis.fitness < minFitness){
+          minFitness = hypothesis.fitness;
+      }
+      population.push(hypothesis);
+  }
+
+  let generations = 0;
+  while (maxFitness < FITNESS_THRESHOLD) {
+    generations++;
+    population = select(population, maxFitness, minFitness);
+    crossover(population, generationSize);
+    mutate(population);
+    maxFitness = Number.MIN_SAFE_INTEGER;
+    minFitness = 1;
+    population.forEach(function(hypothesis, index) {
+      hypothesis.fitness = evaluate(hypothesis, target);
+      if (hypothesis.fitness > maxFitness) {
+        maxFitness = hypothesis.fitness;
+      }
+      if (hypothesis.fitness < minFitness) {
+        minFitness = hypothesis.fitness;
+      }
+    });
+  }
+  console.log(`Generations: ${generations}`);
+  runCount = Math.max(runCount - 1, -1);
 }
-console.log(`Generations: ${generations}`);
 process.exit(0);
