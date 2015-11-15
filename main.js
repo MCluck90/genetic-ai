@@ -12,6 +12,7 @@ let selectKey = yargs.select || 'fitness';
 let crossoverKey = yargs.crossover || 'single';
 let mutationRate = yargs.mutation || 0.05;
 let generationSize = yargs.genSize || 100;
+let tournamentSize = yargs.tournamentSize || generationSize / 2;
 let evaluateKey = yargs.evaluate || 'ascii';
 let runCount = yargs.runs || 1;
 let cores = yargs.cores || require('os').cpus().length;
@@ -88,7 +89,7 @@ while (runCount === -1 || runCount > 0) {
   let generations = 0;
   while (maxFitness < FITNESS_THRESHOLD) {
     generations++;
-    population = select(population, maxFitness, minFitness);
+    population = select(population, maxFitness, minFitness, tournamentSize);
     crossover(population, generationSize);
     mutate(population);
     maxFitness = Number.MIN_SAFE_INTEGER;
